@@ -1,8 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Shield, MapPin, Mic, Brain, Phone, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useSafetyMonitoring } from "@/hooks/useSafetyMonitoring";
+import { useEffect } from "react";
 
 const Home = () => {
+  const { state, startMonitoring, triggerSOS } = useSafetyMonitoring();
+
+  useEffect(() => {
+    // Auto-start monitoring on page load
+    startMonitoring();
+  }, []);
+
   return (
     <div className="min-h-screen p-6 pb-24 relative overflow-hidden">
       {/* Animated background particles */}
@@ -22,37 +31,45 @@ const Home = () => {
         {/* Status Indicators */}
         <div className="grid grid-cols-3 gap-3 mb-12">
           <div className="glass rounded-2xl p-4 text-center">
-            <MapPin className="w-6 h-6 mx-auto mb-2 text-safe-zone" />
+            <MapPin className={`w-6 h-6 mx-auto mb-2 ${state.gpsActive ? 'text-safe-zone' : 'text-muted-foreground'}`} />
             <p className="text-xs text-muted-foreground mb-1">GPS</p>
-            <p className="text-sm font-semibold">Active ✅</p>
+            <p className="text-sm font-semibold">{state.gpsActive ? 'Active ✅' : 'Inactive'}</p>
           </div>
           <div className="glass rounded-2xl p-4 text-center">
-            <Mic className="w-6 h-6 mx-auto mb-2 text-primary" />
+            <Mic className={`w-6 h-6 mx-auto mb-2 ${state.micActive ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
             <p className="text-xs text-muted-foreground mb-1">Mic</p>
-            <p className="text-sm font-semibold">Listening... 🎤</p>
+            <p className="text-sm font-semibold">{state.micActive ? 'Listening... 🎤' : 'Standby'}</p>
           </div>
           <div className="glass rounded-2xl p-4 text-center">
-            <Brain className="w-6 h-6 mx-auto mb-2 text-primary-blue" />
+            <Brain className={`w-6 h-6 mx-auto mb-2 ${state.aiMonitoring ? 'text-primary-blue' : 'text-muted-foreground'}`} />
             <p className="text-xs text-muted-foreground mb-1">AI Mode</p>
-            <p className="text-sm font-semibold">Monitoring 🧠</p>
+            <p className="text-sm font-semibold">{state.aiMonitoring ? 'Monitoring 🧠' : 'Offline'}</p>
           </div>
         </div>
 
         {/* SOS Button */}
         <div className="flex flex-col items-center mb-12">
           <div className="relative mb-6">
-            <div className="absolute inset-0 bg-sos rounded-full blur-3xl opacity-50 animate-pulse"></div>
-            <Link to="/alert">
-              <button className="relative w-56 h-56 rounded-full bg-gradient-to-br from-sos to-sos-glow glow-sos hover:scale-105 transition-transform duration-300 flex flex-col items-center justify-center group">
-                <Shield className="w-20 h-20 mb-3 group-hover:animate-pulse" />
-                <span className="text-2xl font-bold">SOS</span>
-                <span className="text-sm opacity-80">Tap to Activate</span>
-              </button>
-            </Link>
+            <div className={`absolute inset-0 bg-sos rounded-full blur-3xl opacity-50 ${state.status === 'distress' ? 'animate-pulse' : ''}`}></div>
+            <button 
+              onClick={() => triggerSOS()}
+              className="relative w-56 h-56 rounded-full bg-gradient-to-br from-sos to-sos-glow glow-sos hover:scale-105 transition-transform duration-300 flex flex-col items-center justify-center group"
+            >
+              <Shield className="w-20 h-20 mb-3 group-hover:animate-pulse" />
+              <span className="text-2xl font-bold">SOS</span>
+              <span className="text-sm opacity-80">
+                {state.status === 'distress' ? 'Alert Active!' : 'Tap to Activate'}
+              </span>
+            </button>
           </div>
           <p className="text-center text-sm text-muted-foreground max-w-xs">
-            Press and hold for 3 seconds to send instant alert to your emergency contacts
+            Tap to send instant alert • Shake phone 3x • Say "Help Me"
           </p>
+          {state.lastLocation && (
+            <p className="text-xs text-muted-foreground mt-2">
+              📍 {state.lastLocation.address || `${state.lastLocation.lat.toFixed(4)}, ${state.lastLocation.lng.toFixed(4)}`}
+            </p>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -74,12 +91,23 @@ const Home = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-lg">Current Safety Score</h3>
-              <p className="text-xs text-muted-foreground">Based on your location</p>
+              <p className="text-xs text-muted-foreground">
+                {state.status === 'distress' ? '⚠️ Distress Detected' : 
+                 state.status === 'monitoring' ? '✓ Monitoring Active' : 
+                 'Based on your location'}
+              </p>
             </div>
-            <div className="text-4xl font-bold gradient-text">78</div>
+            <div className="text-4xl font-bold gradient-text">
+              {state.status === 'distress' ? Math.round(state.distressConfidence * 100) : 78}
+            </div>
           </div>
           <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-danger-zone via-caution-zone to-safe-zone rounded-full" style={{ width: '78%' }}></div>
+            <div 
+              className={`h-full rounded-full ${
+                state.status === 'distress' ? 'bg-sos' : 'bg-gradient-to-r from-danger-zone via-caution-zone to-safe-zone'
+              }`} 
+              style={{ width: state.status === 'distress' ? `${state.distressConfidence * 100}%` : '78%' }}
+            ></div>
           </div>
         </div>
       </div>

@@ -1,0 +1,10 @@
+project_id = "itmfxfrgezobcozcbnkh"
+
+[functions.detect-distress]
+verify_jwt = false
+
+[functions.send-alert]
+verify_jwt = false
+
+[functions.chat]
+verify_jwt = false
