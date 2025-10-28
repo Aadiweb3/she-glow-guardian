@@ -74,7 +74,7 @@ export const useSafetyMonitoring = () => {
         aiMonitoring: true,
       }));
 
-      // Periodic audio analysis (every 10 seconds)
+      // Periodic audio analysis (every 60 seconds to avoid rate limits)
       monitoringInterval.current = setInterval(async () => {
         try {
           if (audioRecorder.current && !audioRecorder.current.isRecording()) {
@@ -85,21 +85,34 @@ export const useSafetyMonitoring = () => {
               if (audioRecorder.current) {
                 const audioBlob = await audioRecorder.current.stop();
                 
-                // Analyze audio
-                const analysis = await analyzeAudioForDistress(audioBlob, {
-                  location: state.lastLocation,
-                  timestamp: Date.now(),
-                });
+                // Analyze audio with better error handling
+                try {
+                  const analysis = await analyzeAudioForDistress(audioBlob, {
+                    location: state.lastLocation,
+                    timestamp: Date.now(),
+                  });
 
-                setState(prev => ({
-                  ...prev,
-                  distressConfidence: analysis.confidence,
-                  micActive: true,
-                }));
+                  setState(prev => ({
+                    ...prev,
+                    distressConfidence: analysis.confidence,
+                    micActive: true,
+                  }));
 
-                if (analysis.distress_detected && analysis.confidence > 0.7) {
-                  console.log("Distress detected:", analysis);
-                  triggerSOS();
+                  if (analysis.distress_detected && analysis.confidence > 0.7) {
+                    console.log("Distress detected:", analysis);
+                    triggerSOS();
+                  }
+                } catch (error: any) {
+                  // Handle rate limit errors gracefully
+                  if (error.message?.includes('429') || error.message?.includes('rate limit')) {
+                    console.log("Rate limit reached, will retry in next cycle");
+                    toast({
+                      title: "AI Monitoring Paused",
+                      description: "Rate limit reached. Monitoring continues with GPS and motion.",
+                    });
+                  } else {
+                    console.error("Error analyzing audio:", error);
+                  }
                 }
               }
             }, 3000);
@@ -107,7 +120,7 @@ export const useSafetyMonitoring = () => {
         } catch (error) {
           console.error("Error in audio monitoring:", error);
         }
-      }, 10000);
+      }, 60000);
 
       toast({
         title: "Safety Monitoring Active",

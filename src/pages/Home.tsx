@@ -2,15 +2,26 @@ import { Button } from "@/components/ui/button";
 import { Shield, MapPin, Mic, Brain, Phone, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSafetyMonitoring } from "@/hooks/useSafetyMonitoring";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const Home = () => {
-  const { state, startMonitoring, triggerSOS } = useSafetyMonitoring();
+  const { state, startMonitoring, stopMonitoring, triggerSOS } = useSafetyMonitoring();
+  const [isMonitoring, setIsMonitoring] = useState(false);
 
   useEffect(() => {
     // Auto-start monitoring on page load
     startMonitoring();
+    setIsMonitoring(true);
   }, []);
+
+  const toggleMonitoring = () => {
+    if (isMonitoring) {
+      stopMonitoring();
+    } else {
+      startMonitoring();
+    }
+    setIsMonitoring(!isMonitoring);
+  };
 
   return (
     <div className="min-h-screen p-6 pb-24 relative overflow-hidden">
@@ -26,6 +37,23 @@ const Home = () => {
         <div className="mb-8">
           <h1 className="text-2xl font-semibold mb-1">Welcome, Ananya 👋</h1>
           <p className="text-muted-foreground">You're protected by S.H.E.</p>
+        </div>
+
+        {/* Monitoring Control */}
+        <div className="glass rounded-2xl p-4 mb-6 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold mb-1">Safety Monitoring</h3>
+            <p className="text-xs text-muted-foreground">
+              {isMonitoring ? 'AI checks every 60 sec' : 'Paused - Click to resume'}
+            </p>
+          </div>
+          <Button
+            onClick={toggleMonitoring}
+            variant={isMonitoring ? "destructive" : "default"}
+            size="sm"
+          >
+            {isMonitoring ? 'Pause' : 'Resume'}
+          </Button>
         </div>
 
         {/* Status Indicators */}
