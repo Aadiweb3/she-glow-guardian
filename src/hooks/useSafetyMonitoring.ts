@@ -160,8 +160,7 @@ export const useSafetyMonitoring = () => {
           body: JSON.stringify({
             location,
             contacts: [
-              { name: "Mom", phone: "9990011223" },
-              { name: "Friend", phone: "8887745621" },
+              { name: "Emergency Contact", phone: "7000079879" },
             ],
             distressLevel: state.distressConfidence > 0.5 ? "HIGH" : "MEDIUM",
           }),
