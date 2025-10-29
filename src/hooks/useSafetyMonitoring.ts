@@ -163,35 +163,42 @@ export const useSafetyMonitoring = () => {
     try {
       const location = state.lastLocation || await locationTracker.current?.getCurrentLocation();
 
+      if (!location) {
+        throw new Error("Unable to get location");
+      }
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-alert`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-sms-alert`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            location,
-            contacts: [
-              { name: "Emergency Contact", phone: "7000079879" },
-            ],
+            latitude: location.lat,
+            longitude: location.lng,
             distressLevel: state.distressConfidence > 0.5 ? "HIGH" : "MEDIUM",
           }),
         }
       );
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         toast({
-          title: "SOS Alert Sent",
-          description: "Emergency contacts have been notified",
+          title: "🚨 SOS Alert Sent!",
+          description: `Real SMS sent to +91 7000079879`,
           variant: "destructive",
         });
+        console.log("SMS sent successfully:", result);
+      } else {
+        throw new Error(result.error || "Failed to send SMS");
       }
     } catch (error) {
       console.error("Error sending SOS:", error);
       toast({
         title: "Error",
-        description: "Failed to send SOS alert",
+        description: error instanceof Error ? error.message : "Failed to send SOS alert",
         variant: "destructive",
       });
     }

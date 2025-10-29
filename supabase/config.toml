@@ -6,5 +6,8 @@ verify_jwt = false
 [functions.send-alert]
 verify_jwt = false
 
+[functions.send-sms-alert]
+verify_jwt = false
+
 [functions.chat]
 verify_jwt = false
