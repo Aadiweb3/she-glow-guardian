@@ -161,10 +161,14 @@ export const useSafetyMonitoring = () => {
     setState(prev => ({ ...prev, status: "distress" }));
 
     try {
-      const location = state.lastLocation || await locationTracker.current?.getCurrentLocation();
+      let location = state.lastLocation;
 
-      if (!location) {
-        throw new Error("Unable to get location");
+      if (!location && locationTracker.current) {
+        try {
+          location = await locationTracker.current.getCurrentLocation();
+        } catch (e) {
+          console.warn("SOS: location unavailable, continuing without GPS");
+        }
       }
 
       const response = await fetch(
@@ -175,8 +179,8 @@ export const useSafetyMonitoring = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            latitude: location.lat,
-            longitude: location.lng,
+            latitude: location?.lat ?? null,
+            longitude: location?.lng ?? null,
             distressLevel: state.distressConfidence > 0.5 ? "HIGH" : "MEDIUM",
           }),
         }

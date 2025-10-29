@@ -22,11 +22,16 @@ serve(async (req) => {
       throw new Error("Twilio credentials not configured");
     }
 
-    const message = `⚠️ EMERGENCY SOS ALERT from S.H.E. Safety App
+    const hasCoords = typeof latitude === "number" && typeof longitude === "number" && isFinite(latitude) && isFinite(longitude);
+    const locationLine = hasCoords
+      ? `Location: https://maps.google.com?q=${latitude},${longitude}`
+      : "Location: unavailable";
+
+    const message = `🚨 HELP! SOS Alert from S.H.E. Safety App
 
 Distress Level: ${distressLevel || "HIGH"}
 Time: ${new Date().toLocaleString()}
-Location: https://maps.google.com?q=${latitude},${longitude}
+${locationLine}
 
 Please check on them immediately or contact emergency services.`;
 
