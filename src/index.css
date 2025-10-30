@@ -8,72 +8,117 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* S.H.E. App Design System - Futuristic Safety Theme */
+    /* S.H.E. - Smart Help Engine - 3D Futuristic Safety Theme */
+    /* Pink → Purple → Blue Neon Gradient System */
     
-    /* Base Colors */
-    --background: 240 20% 8%;
+    /* Base Colors - Deep Dark for 3D Depth */
+    --background: 240 25% 6%;
     --foreground: 0 0% 100%;
 
-    /* Card & Glass Effects */
-    --card: 240 15% 12%;
+    /* Card & Glass Effects - Enhanced Glassmorphism */
+    --card: 240 20% 10%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 240 15% 12%;
+    --popover: 240 20% 10%;
     --popover-foreground: 0 0% 100%;
 
-    /* Primary Gradient Colors - Pink to Purple */
-    --primary: 330 90% 68%; /* #FF6FB5 */
+    /* Primary Gradient Colors - Pink → Purple → Blue Neon */
+    --primary: 330 100% 71%; /* Bright Pink #FF73B9 */
     --primary-foreground: 0 0% 100%;
-    --primary-purple: 265 52% 62%; /* #845EC2 */
-    --primary-blue: 202 100% 41%; /* #0081CF */
+    --primary-purple: 270 80% 65%; /* Vibrant Purple #9D4EDD */
+    --primary-blue: 210 100% 55%; /* Electric Blue #3B82F6 */
 
-    /* SOS Alert Colors */
-    --sos: 347 100% 58%; /* #FF2E63 */
-    --sos-glow: 330 90% 68%;
+    /* SOS Alert Colors - Intense Red Glow */
+    --sos: 347 100% 62%; /* Bright Red #FF3366 */
+    --sos-glow: 330 100% 71%;
+    --sos-deep: 0 100% 50%; /* Pure Red */
 
-    /* AI Chat Colors */
-    --ai-chat: 265 52% 62%; /* #845EC2 */
-    --ai-chat-light: 280 29% 70%; /* #B39CD0 */
+    /* AI Chat Colors - Purple Gradient */
+    --ai-chat: 270 80% 65%; /* #9D4EDD */
+    --ai-chat-light: 280 60% 75%; /* #C77DFF */
+    --ai-chat-glow: 270 100% 80%;
 
-    /* Safety Zones */
-    --safe-zone: 164 100% 39%; /* #00C9A7 */
-    --safe-zone-light: 134 98% 76%; /* #92FE9D */
-    --danger-zone: 11 100% 58%; /* #FF512F */
-    --danger-zone-dark: 334 67% 50%; /* #DD2476 */
-    --caution-zone: 45 100% 51%; /* #FFC107 */
+    /* Safety Zones - Enhanced Contrast */
+    --safe-zone: 160 100% 45%; /* Bright Cyan #00E5CC */
+    --safe-zone-light: 150 100% 65%; /* #4FFFB0 */
+    --danger-zone: 0 100% 60%; /* Bright Red */
+    --danger-zone-dark: 340 70% 50%; /* Deep Pink-Red */
+    --caution-zone: 45 100% 55%; /* Bright Yellow-Orange */
 
     /* Secondary & Accents */
-    --secondary: 265 52% 62%;
+    --secondary: 270 80% 65%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 15% 20%;
-    --muted-foreground: 240 10% 60%;
+    --muted: 240 20% 18%;
+    --muted-foreground: 240 15% 65%;
 
-    --accent: 330 90% 68%;
+    --accent: 330 100% 71%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 347 100% 58%;
+    --destructive: 347 100% 62%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders & Inputs */
-    --border: 240 15% 20%;
-    --input: 240 15% 20%;
-    --ring: 330 90% 68%;
+    /* Borders & Inputs - Subtle Glow */
+    --border: 240 20% 25%;
+    --input: 240 20% 15%;
+    --ring: 330 100% 71%;
 
-    --radius: 1rem;
+    --radius: 1.5rem;
 
-    /* Gradients */
-    --gradient-main: linear-gradient(135deg, hsl(330 90% 68%), hsl(265 52% 62%), hsl(202 100% 41%));
-    --gradient-sos: linear-gradient(135deg, hsl(347 100% 58%), hsl(330 90% 68%));
-    --gradient-safe: linear-gradient(135deg, hsl(164 100% 39%), hsl(134 98% 76%));
-    --gradient-danger: linear-gradient(135deg, hsl(11 100% 58%), hsl(334 67% 50%));
-    --gradient-ai: linear-gradient(90deg, hsl(265 52% 62%), hsl(280 29% 70%));
-    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    /* Enhanced Neon Gradients - Pink → Purple → Blue */
+    --gradient-main: linear-gradient(135deg, 
+      hsl(330 100% 71%) 0%, 
+      hsl(270 80% 65%) 50%, 
+      hsl(210 100% 55%) 100%);
+    
+    --gradient-hero: linear-gradient(180deg, 
+      hsl(240 25% 6%) 0%, 
+      hsl(270 80% 20%) 50%, 
+      hsl(330 100% 30%) 100%);
+    
+    --gradient-sos: linear-gradient(135deg, 
+      hsl(0 100% 50%) 0%, 
+      hsl(347 100% 62%) 50%, 
+      hsl(330 100% 71%) 100%);
+    
+    --gradient-safe: linear-gradient(135deg, 
+      hsl(160 100% 45%) 0%, 
+      hsl(150 100% 65%) 100%);
+    
+    --gradient-danger: linear-gradient(135deg, 
+      hsl(0 100% 60%) 0%, 
+      hsl(340 70% 50%) 100%);
+    
+    --gradient-ai: linear-gradient(135deg, 
+      hsl(270 80% 65%) 0%, 
+      hsl(280 60% 75%) 100%);
+    
+    --gradient-glass: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.15) 0%, 
+      rgba(255, 255, 255, 0.05) 100%);
 
-    /* Glows & Effects */
-    --glow-primary: 0 0 30px hsla(330, 90%, 68%, 0.5);
-    --glow-sos: 0 0 40px hsla(347, 100%, 58%, 0.6);
-    --glow-safe: 0 0 20px hsla(164, 100%, 39%, 0.4);
+    /* Enhanced 3D Glows & Shadows */
+    --glow-primary: 0 8px 32px hsla(330, 100%, 71%, 0.5), 
+                    0 0 60px hsla(330, 100%, 71%, 0.3);
+    
+    --glow-sos: 0 8px 48px hsla(347, 100%, 62%, 0.7), 
+                0 0 80px hsla(347, 100%, 62%, 0.5),
+                0 0 120px hsla(0, 100%, 50%, 0.3);
+    
+    --glow-safe: 0 8px 32px hsla(160, 100%, 45%, 0.5),
+                 0 0 60px hsla(160, 100%, 45%, 0.3);
+    
+    --glow-ai: 0 8px 32px hsla(270, 80%, 65%, 0.5),
+               0 0 60px hsla(270, 80%, 65%, 0.3);
+
+    /* 3D Shadow Effects */
+    --shadow-3d: 0 10px 40px rgba(0, 0, 0, 0.3),
+                 0 2px 8px rgba(0, 0, 0, 0.2),
+                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -90,28 +135,50 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
-  /* Glass morphism effect */
+  /* Enhanced 3D Glass Morphism */
   .glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-glass);
   }
 
-  /* Glow effects */
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* 3D Card Effect */
+  .card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease;
+  }
+
+  .card-3d:hover {
+    transform: translateY(-8px) rotateX(2deg) rotateY(2deg);
+  }
+
+  /* Enhanced Glow Effects */
   .glow-primary {
     box-shadow: var(--glow-primary);
   }
 
   .glow-sos {
     box-shadow: var(--glow-sos);
-    animation: pulse-glow 2s ease-in-out infinite;
+    animation: pulse-glow-sos 2s ease-in-out infinite;
   }
 
   .glow-safe {
     box-shadow: var(--glow-safe);
   }
 
-  /* Gradient text */
+  .glow-ai {
+    box-shadow: var(--glow-ai);
+  }
+
+  /* Gradient Text */
   .gradient-text {
     background: var(--gradient-main);
     -webkit-background-clip: text;
@@ -119,22 +186,63 @@ All colors MUST be HSL.
     background-clip: text;
   }
 
-  /* Animations */
-  @keyframes pulse-glow {
+  .gradient-text-ai {
+    background: var(--gradient-ai);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* 3D Button Effect */
+  .btn-3d {
+    box-shadow: var(--shadow-3d);
+    transform: translateZ(0);
+    transition: all 0.2s ease;
+  }
+
+  .btn-3d:hover {
+    transform: translateY(-2px) translateZ(10px);
+  }
+
+  .btn-3d:active {
+    transform: translateY(0) translateZ(0);
+  }
+
+  /* Enhanced Animations */
+  @keyframes pulse-glow-sos {
     0%, 100% {
-      box-shadow: 0 0 20px hsla(347, 100%, 58%, 0.4);
+      box-shadow: 0 8px 48px hsla(347, 100%, 62%, 0.5),
+                  0 0 60px hsla(347, 100%, 62%, 0.3);
+      transform: scale(1);
     }
     50% {
-      box-shadow: 0 0 40px hsla(347, 100%, 58%, 0.8);
+      box-shadow: 0 8px 64px hsla(347, 100%, 62%, 0.8),
+                  0 0 100px hsla(347, 100%, 62%, 0.6),
+                  0 0 150px hsla(0, 100%, 50%, 0.4);
+      transform: scale(1.02);
     }
   }
 
   @keyframes float {
     0%, 100% {
+      transform: translateY(0px) translateX(0px);
+    }
+    33% {
+      transform: translateY(-15px) translateX(10px);
+    }
+    66% {
+      transform: translateY(-8px) translateX(-10px);
+    }
+  }
+
+  @keyframes float-slow {
+    0%, 100% {
       transform: translateY(0px);
+      opacity: 0.6;
     }
     50% {
-      transform: translateY(-10px);
+      transform: translateY(-30px);
+      opacity: 0.8;
     }
   }
 
@@ -147,8 +255,33 @@ All colors MUST be HSL.
     }
   }
 
+  @keyframes glow-wave {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.1);
+    }
+  }
+
+  @keyframes rotate-3d {
+    0% {
+      transform: rotateY(0deg) rotateX(0deg);
+    }
+    100% {
+      transform: rotateY(360deg) rotateX(360deg);
+    }
+  }
+
+  /* Utility Animation Classes */
   .animate-float {
-    animation: float 3s ease-in-out infinite;
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
   }
 
   .animate-shimmer {
@@ -156,9 +289,25 @@ All colors MUST be HSL.
     background: linear-gradient(
       90deg,
       rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.3) 50%,
       rgba(255, 255, 255, 0) 100%
     );
     background-size: 1000px 100%;
+  }
+
+  .animate-glow-wave {
+    animation: glow-wave 3s ease-in-out infinite;
+  }
+
+  .animate-rotate-3d {
+    animation: rotate-3d 20s linear infinite;
+  }
+
+  /* Particle Effect */
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(2px);
   }
 }
