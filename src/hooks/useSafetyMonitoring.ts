@@ -30,6 +30,7 @@ export const useSafetyMonitoring = () => {
   const motionDetector = useRef<MotionDetector | null>(null);
   const locationTracker = useRef<LocationTracker | null>(null);
   const monitoringInterval = useRef<NodeJS.Timeout | null>(null);
+  const sosSending = useRef(false);
 
   const handleShake = useCallback(() => {
     console.log("Shake detected - triggering SOS");
@@ -158,6 +159,8 @@ export const useSafetyMonitoring = () => {
   };
 
   const triggerSOS = async () => {
+    if (sosSending.current) { console.log('SOS send already in progress'); return; }
+    sosSending.current = true;
     setState(prev => ({ ...prev, status: "distress" }));
 
     try {
@@ -198,13 +201,14 @@ export const useSafetyMonitoring = () => {
       } else {
         throw new Error(result.error || "Failed to send SMS");
       }
-    } catch (error) {
+     } catch (error) {
       console.error("Error sending SOS:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to send SOS alert",
         variant: "destructive",
       });
+      sosSending.current = false;
     }
   };
 

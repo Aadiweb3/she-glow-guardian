@@ -27,13 +27,13 @@ serve(async (req) => {
       ? `Location: https://maps.google.com?q=${latitude},${longitude}`
       : "Location: unavailable";
 
-    const message = `🚨 HELP! SOS Alert from S.H.E. Safety App
+    const message = `HELP! SOS from SHE Safety App.
 
-Distress Level: ${distressLevel || "HIGH"}
+Distress: ${distressLevel || "HIGH"}
 Time: ${new Date().toLocaleString()}
 ${locationLine}
 
-Please check on them immediately or contact emergency services.`;
+Please call or contact emergency services now.`;
 
     console.log("Sending SMS to:", emergencyContact);
     console.log("Message:", message);
