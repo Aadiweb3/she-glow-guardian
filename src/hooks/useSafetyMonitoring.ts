@@ -3,6 +3,7 @@ import { AudioRecorder, analyzeAudioForDistress } from "@/utils/AudioRecorder";
 import { MotionDetector } from "@/utils/MotionDetector";
 import { LocationTracker, LocationData } from "@/utils/LocationTracker";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export type SafetyStatus = "safe" | "monitoring" | "distress";
 
@@ -159,55 +160,99 @@ export const useSafetyMonitoring = () => {
   };
 
   const triggerSOS = async () => {
-    if (sosSending.current) { console.log('SOS send already in progress'); return; }
+    console.log("🚨 SOS TRIGGERED!");
+    
+    // Prevent multiple SOS triggers
+    if (sosSending.current) {
+      console.log("SOS already being sent, skipping...");
+      return;
+    }
+    
     sosSending.current = true;
-    setState(prev => ({ ...prev, status: "distress" }));
+    
+    setState(prev => ({
+      ...prev,
+      status: 'distress'
+    }));
 
     try {
-      let location = state.lastLocation;
-
-      if (!location && locationTracker.current) {
-        try {
-          location = await locationTracker.current.getCurrentLocation();
-        } catch (e) {
-          console.warn("SOS: location unavailable, continuing without GPS");
-        }
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("No authenticated user for SOS");
+        return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-sms-alert`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            latitude: location?.lat ?? null,
-            longitude: location?.lng ?? null,
-            distressLevel: state.distressConfidence > 0.5 ? "HIGH" : "MEDIUM",
-          }),
-        }
-      );
+      // Fetch emergency contacts
+      const { data: contacts, error: contactsError } = await supabase
+        .from('emergency_contacts')
+        .select('*')
+        .eq('user_id', user.id);
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      if (contactsError) {
+        console.error("Failed to fetch emergency contacts:", contactsError);
         toast({
-          title: "🚨 SOS Alert Sent!",
-          description: `Real SMS sent to +91 7000079879`,
+          title: "Error",
+          description: "Failed to fetch emergency contacts",
           variant: "destructive",
         });
-        console.log("SMS sent successfully:", result);
-      } else {
-        throw new Error(result.error || "Failed to send SMS");
+        return;
       }
-     } catch (error) {
+
+      if (!contacts || contacts.length === 0) {
+        console.error("No emergency contacts configured");
+        toast({
+          title: "No Contacts",
+          description: "Please add emergency contacts first",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get current location
+      let location = state.lastLocation;
+      if (locationTracker.current) {
+        try {
+          location = await locationTracker.current.getCurrentLocation();
+          setState(prev => ({ ...prev, lastLocation: location }));
+        } catch (error) {
+          console.warn("Could not get current location for SOS:", error);
+        }
+      }
+
+      // Send SMS alert via Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('send-sms-alert', {
+        body: {
+          latitude: location?.lat,
+          longitude: location?.lng,
+          distressLevel: 'HIGH',
+          contacts: contacts,
+        },
+      });
+
+      if (error) {
+        console.error("Failed to send SOS alert:", error);
+        toast({
+          title: "Error",
+          description: "Failed to send SOS alert",
+          variant: "destructive",
+        });
+      } else {
+        console.log("SOS alert sent successfully:", data);
+        toast({
+          title: "🚨 SOS Alert Sent!",
+          description: `Alerts sent to ${contacts.length} contact(s)`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       console.error("Error sending SOS:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send SOS alert",
+        description: error instanceof Error ? error.message : "Failed to send SOS",
         variant: "destructive",
       });
+    } finally {
       sosSending.current = false;
     }
   };

@@ -11,15 +11,33 @@ serve(async (req) => {
   }
 
   try {
-    const { latitude, longitude, distressLevel } = await req.json();
+    const { latitude, longitude, distressLevel, contacts } = await req.json();
+    
+    console.log('Received SOS alert request:', { 
+      latitude, 
+      longitude, 
+      distressLevel,
+      contactCount: contacts?.length 
+    });
 
     const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const twilioToken = Deno.env.get("TWILIO_AUTH_TOKEN");
     const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
-    const emergencyContact = "+917000079879";
 
     if (!twilioSid || !twilioToken || !twilioPhone) {
-      throw new Error("Twilio credentials not configured");
+      console.error('Missing Twilio credentials');
+      return new Response(
+        JSON.stringify({ error: 'Twilio credentials not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    if (!contacts || contacts.length === 0) {
+      console.error('No emergency contacts provided');
+      return new Response(
+        JSON.stringify({ error: 'No emergency contacts configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
     const hasCoords = typeof latitude === "number" && typeof longitude === "number" && isFinite(latitude) && isFinite(longitude);
@@ -27,7 +45,7 @@ serve(async (req) => {
       ? `Location: https://maps.google.com?q=${latitude},${longitude}`
       : "Location: unavailable";
 
-    const message = `HELP! SOS from SHE Safety App.
+    const message = `🚨 SOS ALERT from S.H.E. Safety App
 
 Distress: ${distressLevel || "HIGH"}
 Time: ${new Date().toLocaleString()}
@@ -35,45 +53,52 @@ ${locationLine}
 
 Please call or contact emergency services now.`;
 
-    console.log("Sending SMS to:", emergencyContact);
-    console.log("Message:", message);
+    // Send SMS to all emergency contacts
+    const results = [];
+    for (const contact of contacts) {
+      console.log('Sending SMS to:', { name: contact.name, phone: contact.phone_number });
+      
+      try {
+        const authHeader = btoa(`${twilioSid}:${twilioToken}`);
+        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
 
-    // Send SMS using Twilio API
-    const authHeader = btoa(`${twilioSid}:${twilioToken}`);
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
+        const response = await fetch(twilioUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Basic ${authHeader}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            To: contact.phone_number,
+            From: twilioPhone,
+            Body: message,
+          }),
+        });
 
-    const response = await fetch(twilioUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${authHeader}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        To: emergencyContact,
-        From: twilioPhone,
-        Body: message,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("Twilio API error:", result);
-      throw new Error(result.message || "Failed to send SMS");
+        const data = await response.json();
+        
+        if (!response.ok) {
+          console.error(`Twilio API error for ${contact.name}:`, data);
+          results.push({ contact: contact.name, success: false, error: data.message });
+        } else {
+          console.log(`SMS sent successfully to ${contact.name}:`, data.sid);
+          results.push({ contact: contact.name, success: true, sid: data.sid });
+        }
+      } catch (error) {
+        console.error(`Error sending to ${contact.name}:`, error);
+        results.push({ contact: contact.name, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+      }
     }
 
-    console.log("SMS sent successfully:", result.sid);
-
+    const successCount = results.filter(r => r.success).length;
+    
     return new Response(
-      JSON.stringify({
-        success: true,
-        messageSid: result.sid,
-        status: result.status,
-        to: emergencyContact,
+      JSON.stringify({ 
+        success: successCount > 0, 
+        results,
+        summary: `Sent to ${successCount} of ${contacts.length} contacts`
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {
     console.error("Error in send-sms-alert:", error);
