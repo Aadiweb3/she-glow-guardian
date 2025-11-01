@@ -53,11 +53,25 @@ export const useSafetyMonitoring = () => {
 
   const startMonitoring = async () => {
     try {
-      // Start location tracking
+      // Start location tracking - don't fail if location unavailable
       if (!locationTracker.current) {
         locationTracker.current = new LocationTracker(handleLocationUpdate);
       }
-      await locationTracker.current.start();
+      
+      try {
+        await locationTracker.current.start();
+        toast({
+          title: "Location Access Granted",
+          description: "GPS tracking is active",
+        });
+      } catch (locError) {
+        console.warn("Location tracking unavailable:", locError);
+        toast({
+          title: "Location Access Limited",
+          description: "SOS will work without GPS location. Please enable location permissions for better safety.",
+          variant: "destructive",
+        });
+      }
 
       // Start motion detection
       if (!motionDetector.current) {
@@ -209,22 +223,51 @@ export const useSafetyMonitoring = () => {
         return;
       }
 
-      // Get current location
+      // Get current location - try multiple methods
       let location = state.lastLocation;
-      if (locationTracker.current) {
+      
+      // First try to get fresh location
+      try {
+        if (!locationTracker.current) {
+          locationTracker.current = new LocationTracker(handleLocationUpdate);
+        }
+        location = await locationTracker.current.getCurrentLocation();
+        setState(prev => ({ ...prev, lastLocation: location }));
+        console.log("Got current location for SOS:", location);
+      } catch (error) {
+        console.warn("Could not get fresh location, using last known:", error);
+        // Try one more time with a longer timeout
         try {
-          location = await locationTracker.current.getCurrentLocation();
-          setState(prev => ({ ...prev, lastLocation: location }));
-        } catch (error) {
-          console.warn("Could not get current location for SOS:", error);
+          location = await new Promise<LocationData>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                resolve({
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                  accuracy: position.coords.accuracy,
+                  timestamp: position.timestamp,
+                });
+              },
+              reject,
+              {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0,
+              }
+            );
+          });
+          console.log("Got location on retry:", location);
+        } catch (retryError) {
+          console.error("Location unavailable after retry:", retryError);
         }
       }
 
       // Send SMS alert via Supabase Edge Function
+      console.log("Sending SOS with location:", location);
       const { data, error } = await supabase.functions.invoke('send-sms-alert', {
         body: {
-          latitude: location?.lat,
-          longitude: location?.lng,
+          latitude: location?.lat || null,
+          longitude: location?.lng || null,
           distressLevel: 'HIGH',
           contacts: contacts,
         },

@@ -36,7 +36,37 @@ const Home = () => {
   }, [navigate]);
 
   useEffect(() => {
+    // Request location permissions upfront
+    const requestLocationPermission = async () => {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        
+        if (permission.state === 'prompt' || permission.state === 'denied') {
+          // Try to get location which will trigger permission request
+          navigator.geolocation.getCurrentPosition(
+            () => {
+              toast({
+                title: "Location Access Granted",
+                description: "Your location will be included in SOS alerts",
+              });
+            },
+            (error) => {
+              console.warn("Location permission denied:", error);
+              toast({
+                title: "Location Access Needed",
+                description: "Please enable location for accurate SOS alerts",
+                variant: "destructive",
+              });
+            }
+          );
+        }
+      } catch (error) {
+        console.warn("Permission API not supported:", error);
+      }
+    };
+
     if (user) {
+      requestLocationPermission();
       startMonitoring();
       setIsMonitoring(true);
     }
