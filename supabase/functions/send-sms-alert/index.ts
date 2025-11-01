@@ -56,7 +56,8 @@ Please call or contact emergency services now.`;
     // Send SMS to all emergency contacts
     const results = [];
     for (const contact of contacts) {
-      console.log('Sending SMS to:', { name: contact.name, phone: contact.phone_number });
+      const toNumber = String(contact.phone_number).replace(/\s+/g, '');
+      console.log('Sending SMS to:', { name: contact.name, phone: toNumber });
       
       try {
         const authHeader = btoa(`${twilioSid}:${twilioToken}`);
@@ -69,7 +70,7 @@ Please call or contact emergency services now.`;
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            To: contact.phone_number,
+            To: toNumber,
             From: twilioPhone,
             Body: message,
           }),

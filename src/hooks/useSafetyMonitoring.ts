@@ -262,6 +262,39 @@ export const useSafetyMonitoring = () => {
         }
       }
 
+      // If still no location, wait up to 12s for a fix
+      if (!location?.lat || !location?.lng) {
+        try {
+          location = await new Promise<LocationData>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Location timeout')), 12000);
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                clearTimeout(timer);
+                resolve({
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                  accuracy: position.coords.accuracy,
+                  timestamp: position.timestamp,
+                });
+              },
+              (err) => {
+                clearTimeout(timer);
+                reject(err);
+              },
+              {
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 5000,
+              }
+            );
+          });
+          console.log("Got location after wait:", location);
+          setState(prev => ({ ...prev, lastLocation: location }));
+        } catch (waitErr) {
+          console.warn("Still no location fix after waiting:", waitErr);
+        }
+      }
+
       // Send SMS alert via Supabase Edge Function
       console.log("Sending SOS with location:", location);
       const { data, error } = await supabase.functions.invoke('send-sms-alert', {
