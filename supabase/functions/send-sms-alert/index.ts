@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { latitude, longitude, distressLevel, contacts } = await req.json();
+    const { latitude, longitude, distressLevel, contacts, update } = await req.json();
     
     console.log('Received SOS alert request:', { 
       latitude, 
@@ -45,24 +45,17 @@ serve(async (req) => {
       ? `Location: https://maps.google.com?q=${latitude},${longitude}`
       : "Location: unavailable";
 
-    const message = `🚨 SOS ALERT from S.H.E. Safety App
+    const prefix = update ? '🚨 SOS UPDATE' : '🚨 SOS ALERT';
+    const message = `${prefix} from S.H.E. Safety App\n\nDistress: ${distressLevel || "HIGH"}\nTime: ${new Date().toLocaleString()}\n${locationLine}\n\nPlease call or contact emergency services now.`;
 
-Distress: ${distressLevel || "HIGH"}
-Time: ${new Date().toLocaleString()}
-${locationLine}
+    // Send SMS to all emergency contacts in parallel
+    const authHeader = btoa(`${twilioSid}:${twilioToken}`);
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
 
-Please call or contact emergency services now.`;
-
-    // Send SMS to all emergency contacts
-    const results = [];
-    for (const contact of contacts) {
-      const toNumber = String(contact.phone_number).replace(/\s+/g, '');
+    const tasks = contacts.map(async (contact: any) => {
+      const toNumber = String(contact.phone_number).replace(/[^+\d]/g, '');
       console.log('Sending SMS to:', { name: contact.name, phone: toNumber });
-      
       try {
-        const authHeader = btoa(`${twilioSid}:${twilioToken}`);
-        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
-
         const response = await fetch(twilioUrl, {
           method: "POST",
           headers: {
@@ -75,9 +68,7 @@ Please call or contact emergency services now.`;
             Body: message,
           }),
         });
-
         const data = await response.json();
-        
         if (!response.ok) {
           const code = (data && (data.code || data.error_code)) ?? undefined;
           let friendly = data?.message || 'Failed to send SMS';
@@ -86,16 +77,18 @@ Please call or contact emergency services now.`;
           if (code === 21610) friendly = `Recipient has blocked messages (STOP). Ask them to send START to your Twilio number.`;
           if (code === 21606) friendly = `Your Twilio number is not SMS-enabled. Use an SMS-capable number.`;
           console.error(`Twilio API error for ${contact.name}:`, { code, data });
-          results.push({ contact: contact.name, success: false, error: friendly, code });
+          return { contact: contact.name, success: false, error: friendly, code };
         } else {
           console.log(`SMS sent successfully to ${contact.name}:`, data.sid);
-          results.push({ contact: contact.name, success: true, sid: data.sid });
+          return { contact: contact.name, success: true, sid: data.sid };
         }
       } catch (error) {
         console.error(`Error sending to ${contact.name}:`, error);
-        results.push({ contact: contact.name, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+        return { contact: contact.name, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
       }
-    }
+    });
+
+    const results = await Promise.all(tasks);
 
     const successCount = results.filter(r => r.success).length;
     

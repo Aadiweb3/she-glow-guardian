@@ -223,8 +223,26 @@ export const useSafetyMonitoring = () => {
         return;
       }
 
-      // Get current location - try multiple methods
-      let location = state.lastLocation;
+      // Send immediate SOS with last known location (for speed)
+      const initialLocation = state.lastLocation;
+      try {
+        const { data: immediateData, error: immediateError } = await supabase.functions.invoke('send-sms-alert', {
+          body: {
+            latitude: initialLocation?.lat ?? null,
+            longitude: initialLocation?.lng ?? null,
+            distressLevel: 'HIGH',
+            contacts: contacts,
+            update: false,
+          },
+        });
+        console.log('Immediate SOS sent:', immediateData || immediateError);
+        toast({ title: '🚨 SOS Sent', description: 'Alerts are being delivered now', variant: 'destructive' });
+      } catch (e) {
+        console.error('Immediate SOS failed:', e);
+      }
+
+      // Get current location - try multiple methods for an update
+      let location = initialLocation;
       
       // First try to get fresh location
       try {
@@ -295,16 +313,24 @@ export const useSafetyMonitoring = () => {
         }
       }
 
-      // Send SMS alert via Supabase Edge Function
-      console.log("Sending SOS with location:", location);
-      const { data, error } = await supabase.functions.invoke('send-sms-alert', {
-        body: {
-          latitude: location?.lat || null,
-          longitude: location?.lng || null,
-          distressLevel: 'HIGH',
-          contacts: contacts,
-        },
-      });
+      // If we got a better location than initial, send an update
+      const hasFreshFix = location?.lat && location?.lng && (!initialLocation || Math.abs(location.lat - initialLocation.lat) > 0.0001 || Math.abs(location.lng - initialLocation.lng) > 0.0001);
+      let data: any = null; let error: any = null;
+      if (hasFreshFix) {
+        console.log('Sending location update with:', location);
+        const res = await supabase.functions.invoke('send-sms-alert', {
+          body: {
+            latitude: location.lat,
+            longitude: location.lng,
+            distressLevel: 'HIGH',
+            contacts: contacts,
+            update: true,
+          },
+        });
+        data = res.data; error = res.error;
+      } else {
+        console.log('No fresh location fix; skip update SMS');
+      }
 
       if (error) {
         console.error("Failed to send SOS alert:", error);
