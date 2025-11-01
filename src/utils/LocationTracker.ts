@@ -45,8 +45,8 @@ export class LocationTracker {
         },
         {
           enableHighAccuracy: true,
-          maximumAge: 5000,
-          timeout: 15000,
+          maximumAge: 0,
+          timeout: 5000,
         }
       );
     });
@@ -96,9 +96,8 @@ export class LocationTracker {
         reject,
         {
           enableHighAccuracy: true,
-          maximumAge: 5000,
-          timeout: 15000,
-          }
+          timeout: 5000,
+        }
       );
     });
   }

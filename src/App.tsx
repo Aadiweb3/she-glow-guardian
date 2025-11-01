@@ -8,7 +8,6 @@ import Map from "./pages/Map";
 import Chat from "./pages/Chat";
 import Alert from "./pages/Alert";
 import Contacts from "./pages/Contacts";
-import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,7 +19,6 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Home />} />
           <Route path="/map" element={<Map />} />
           <Route path="/chat" element={<Chat />} />

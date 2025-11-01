@@ -1,43 +1,10 @@
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, AlertTriangle, Navigation, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, AlertTriangle, Navigation } from "lucide-react";
 import { Link } from "react-router-dom";
-import { LocationTracker, LocationData } from "@/utils/LocationTracker";
-import { useToast } from "@/hooks/use-toast";
 
 const Map = () => {
-  const [location, setLocation] = useState<LocationData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
-  const fetchLocation = async () => {
-    setLoading(true);
-    try {
-      const tracker = new LocationTracker((loc) => {
-        setLocation(loc);
-      });
-      
-      const currentLocation = await tracker.getCurrentLocation();
-      setLocation(currentLocation);
-      
-      toast({
-        title: "Location updated",
-        description: "Your current location has been fetched successfully.",
-      });
-    } catch (error) {
-      console.error("Location error:", error);
-      toast({
-        title: "Location error",
-        description: "Could not fetch your location. Please enable location services.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen relative gradient-pink-dark">
+    <div className="min-h-screen relative">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 glass border-b border-white/10 p-4">
         <div className="max-w-md mx-auto flex items-center justify-between">
@@ -47,19 +14,11 @@ const Map = () => {
             </Button>
           </Link>
           <div className="text-center flex-1">
-            <h1 className="font-semibold">Live Location</h1>
-            <p className="text-xs text-muted-foreground">
-              {location ? "Location active" : "Tap to fetch location"}
-            </p>
+            <h1 className="font-semibold">Your Route – Stay Safe</h1>
+            <p className="text-xs text-muted-foreground">Safety Score: 78/100</p>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="rounded-full"
-            onClick={fetchLocation}
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Navigation className="w-5 h-5" />}
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <Navigation className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -95,40 +54,20 @@ const Map = () => {
         <div className="max-w-md mx-auto">
           {/* Current Location Info */}
           <div className="glass rounded-2xl p-4 mb-3">
-            {location ? (
-              <>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-sm mb-1">Current Location</h3>
-                    <p className="text-xs text-muted-foreground break-words">
-                      {location.address || `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MapPin className="w-3 h-3" />
-                  <span>Accuracy: {location.accuracy.toFixed(0)}m</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-3"
-                  onClick={() => window.open(`https://maps.google.com/?q=${location.lat},${location.lng}`, '_blank')}
-                >
-                  View on Google Maps
-                </Button>
-              </>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Click the navigation button to fetch your location
-                </p>
-                <Button onClick={fetchLocation} disabled={loading}>
-                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Navigation className="w-4 h-4 mr-2" />}
-                  Get Location
-                </Button>
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="font-semibold text-sm mb-1">Current Location</h3>
+                <p className="text-xs text-muted-foreground">MI Road, Jaipur</p>
               </div>
-            )}
+              <div className="text-right">
+                <div className="text-2xl font-bold text-caution-zone">78</div>
+                <div className="text-xs text-muted-foreground">Safety Score</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MapPin className="w-3 h-3" />
+              <span>Nearest Safe Zone: Cafe Bliss (0.4 km)</span>
+            </div>
           </div>
 
           {/* Zone Legend */}

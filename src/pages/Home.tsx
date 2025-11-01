@@ -1,85 +1,19 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Shield, MapPin, MessageCircle, Users, Bell, Phone, LogOut, Mic, Brain, Sparkles } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Shield, MapPin, Mic, Brain, Phone, MessageCircle, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useSafetyMonitoring } from "@/hooks/useSafetyMonitoring";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 const Home = () => {
   const { state, startMonitoring, stopMonitoring, triggerSOS } = useSafetyMonitoring();
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [showSaheli, setShowSaheli] = useState(false);
 
   useEffect(() => {
-    // Check authentication
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  useEffect(() => {
-    // Request location permissions upfront
-    const requestLocationPermission = async () => {
-      try {
-        const permission = await navigator.permissions.query({ name: 'geolocation' });
-        
-        if (permission.state === 'prompt' || permission.state === 'denied') {
-          // Try to get location which will trigger permission request
-          navigator.geolocation.getCurrentPosition(
-            () => {
-              toast({
-                title: "Location Access Granted",
-                description: "Your location will be included in SOS alerts",
-              });
-            },
-            (error) => {
-              console.warn("Location permission denied:", error);
-              toast({
-                title: "Location Access Needed",
-                description: "Please enable location for accurate SOS alerts",
-                variant: "destructive",
-              });
-            }
-          );
-        }
-      } catch (error) {
-        console.warn("Permission API not supported:", error);
-      }
-    };
-
-    if (user) {
-      requestLocationPermission();
-      startMonitoring();
-      setIsMonitoring(true);
-    }
-  }, [user]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logged out",
-      description: "You have been safely logged out.",
-    });
-    navigate("/auth");
-  };
+    startMonitoring();
+    setIsMonitoring(true);
+  }, []);
 
   const toggleMonitoring = () => {
     if (isMonitoring) {
@@ -91,8 +25,6 @@ const Home = () => {
   };
 
   const safetyStatus = state.status === 'distress' ? 'alert' : 'safe';
-
-  if (!user) return null;
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -205,19 +137,9 @@ const Home = () => {
               {safetyStatus === 'safe' ? '🟢 Safe' : '🔴 Alert Sent'}
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              <span className="text-sm font-bold gradient-text">S.H.E.</span>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleLogout}
-              className="h-8 w-8"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary" />
+            <span className="text-sm font-bold gradient-text">S.H.E.</span>
           </div>
         </motion.div>
 
@@ -248,6 +170,14 @@ const Home = () => {
               transition={{ delay: 0.4 }}
             >
               AI that listens, learns, and protects you.
+            </motion.p>
+            <motion.p 
+              className="text-sm text-muted-foreground/70"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              Welcome back, Ananya 👋
             </motion.p>
           </motion.div>
         </div>

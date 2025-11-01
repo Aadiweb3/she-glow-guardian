@@ -129,10 +129,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-  }
-  
-  .gradient-pink-dark {
-    background: linear-gradient(180deg, #ffc0e3 0%, #8b5cf6 50%, #1a0b2e 100%);
+    background: var(--gradient-main);
     background-attachment: fixed;
   }
 }

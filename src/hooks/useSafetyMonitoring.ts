@@ -3,7 +3,6 @@ import { AudioRecorder, analyzeAudioForDistress } from "@/utils/AudioRecorder";
 import { MotionDetector } from "@/utils/MotionDetector";
 import { LocationTracker, LocationData } from "@/utils/LocationTracker";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 export type SafetyStatus = "safe" | "monitoring" | "distress";
 
@@ -53,25 +52,11 @@ export const useSafetyMonitoring = () => {
 
   const startMonitoring = async () => {
     try {
-      // Start location tracking - don't fail if location unavailable
+      // Start location tracking
       if (!locationTracker.current) {
         locationTracker.current = new LocationTracker(handleLocationUpdate);
       }
-      
-      try {
-        await locationTracker.current.start();
-        toast({
-          title: "Location Access Granted",
-          description: "GPS tracking is active",
-        });
-      } catch (locError) {
-        console.warn("Location tracking unavailable:", locError);
-        toast({
-          title: "Location Access Limited",
-          description: "SOS will work without GPS location. Please enable location permissions for better safety.",
-          variant: "destructive",
-        });
-      }
+      await locationTracker.current.start();
 
       // Start motion detection
       if (!motionDetector.current) {
@@ -174,192 +159,55 @@ export const useSafetyMonitoring = () => {
   };
 
   const triggerSOS = async () => {
-    console.log("🚨 SOS TRIGGERED!");
-    
-    // Prevent multiple SOS triggers
-    if (sosSending.current) {
-      console.log("SOS already being sent, skipping...");
-      return;
-    }
-    
+    if (sosSending.current) { console.log('SOS send already in progress'); return; }
     sosSending.current = true;
-    
-    setState(prev => ({
-      ...prev,
-      status: 'distress'
-    }));
+    setState(prev => ({ ...prev, status: "distress" }));
 
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error("No authenticated user for SOS");
-        return;
-      }
+      let location = state.lastLocation;
 
-      // Fetch emergency contacts
-      const { data: contacts, error: contactsError } = await supabase
-        .from('emergency_contacts')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (contactsError) {
-        console.error("Failed to fetch emergency contacts:", contactsError);
-        toast({
-          title: "Error",
-          description: "Failed to fetch emergency contacts",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!contacts || contacts.length === 0) {
-        console.error("No emergency contacts configured");
-        toast({
-          title: "No Contacts",
-          description: "Please add emergency contacts first",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Send immediate SOS with last known location (for speed)
-      const initialLocation = state.lastLocation;
-      try {
-        const { data: immediateData, error: immediateError } = await supabase.functions.invoke('send-sms-alert', {
-          body: {
-            latitude: initialLocation?.lat ?? null,
-            longitude: initialLocation?.lng ?? null,
-            distressLevel: 'HIGH',
-            contacts: contacts,
-            update: false,
-          },
-        });
-        console.log('Immediate SOS sent:', immediateData || immediateError);
-        toast({ title: '🚨 SOS Sent', description: 'Alerts are being delivered now', variant: 'destructive' });
-      } catch (e) {
-        console.error('Immediate SOS failed:', e);
-      }
-
-      // Get current location - try multiple methods for an update
-      let location = initialLocation;
-      
-      // First try to get fresh location
-      try {
-        if (!locationTracker.current) {
-          locationTracker.current = new LocationTracker(handleLocationUpdate);
-        }
-        location = await locationTracker.current.getCurrentLocation();
-        setState(prev => ({ ...prev, lastLocation: location }));
-        console.log("Got current location for SOS:", location);
-      } catch (error) {
-        console.warn("Could not get fresh location, using last known:", error);
-        // Try one more time with a longer timeout
+      if (!location && locationTracker.current) {
         try {
-          location = await new Promise<LocationData>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                resolve({
-                  lat: position.coords.latitude,
-                  lng: position.coords.longitude,
-                  accuracy: position.coords.accuracy,
-                  timestamp: position.timestamp,
-                });
-              },
-              reject,
-              {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0,
-              }
-            );
-          });
-          console.log("Got location on retry:", location);
-        } catch (retryError) {
-          console.error("Location unavailable after retry:", retryError);
+          location = await locationTracker.current.getCurrentLocation();
+        } catch (e) {
+          console.warn("SOS: location unavailable, continuing without GPS");
         }
       }
 
-      // If still no location, wait up to 12s for a fix
-      if (!location?.lat || !location?.lng) {
-        try {
-          location = await new Promise<LocationData>((resolve, reject) => {
-            const timer = setTimeout(() => reject(new Error('Location timeout')), 12000);
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                clearTimeout(timer);
-                resolve({
-                  lat: position.coords.latitude,
-                  lng: position.coords.longitude,
-                  accuracy: position.coords.accuracy,
-                  timestamp: position.timestamp,
-                });
-              },
-              (err) => {
-                clearTimeout(timer);
-                reject(err);
-              },
-              {
-                enableHighAccuracy: true,
-                timeout: 12000,
-                maximumAge: 5000,
-              }
-            );
-          });
-          console.log("Got location after wait:", location);
-          setState(prev => ({ ...prev, lastLocation: location }));
-        } catch (waitErr) {
-          console.warn("Still no location fix after waiting:", waitErr);
-        }
-      }
-
-      // If we got a better location than initial, send an update
-      const hasFreshFix = location?.lat && location?.lng && (!initialLocation || Math.abs(location.lat - initialLocation.lat) > 0.0001 || Math.abs(location.lng - initialLocation.lng) > 0.0001);
-      let data: any = null; let error: any = null;
-      if (hasFreshFix) {
-        console.log('Sending location update with:', location);
-        const res = await supabase.functions.invoke('send-sms-alert', {
-          body: {
-            latitude: location.lat,
-            longitude: location.lng,
-            distressLevel: 'HIGH',
-            contacts: contacts,
-            update: true,
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-sms-alert`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        });
-        data = res.data; error = res.error;
-      } else {
-        console.log('No fresh location fix; skip update SMS');
-      }
+          body: JSON.stringify({
+            latitude: location?.lat ?? null,
+            longitude: location?.lng ?? null,
+            distressLevel: state.distressConfidence > 0.5 ? "HIGH" : "MEDIUM",
+          }),
+        }
+      );
 
-      if (error) {
-        console.error("Failed to send SOS alert:", error);
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         toast({
-          title: "SOS Failed",
-          description: "We couldn't send your alert. Please try again.",
+          title: "🚨 SOS Alert Sent!",
+          description: `Real SMS sent to +91 7000079879`,
           variant: "destructive",
         });
+        console.log("SMS sent successfully:", result);
       } else {
-        console.log("SOS alert sent response:", data);
-        const results = (data as any)?.results || [];
-        const successCount = results.filter((r: any) => r.success).length;
-        const firstFailure = results.find((r: any) => !r.success);
-        toast({
-          title: successCount > 0 ? "🚨 SOS Alert Sent" : "SOS Not Sent",
-          description: firstFailure
-            ? `Sent to ${successCount}/${contacts.length}. Issue: ${firstFailure.error}`
-            : `Sent to ${successCount}/${contacts.length} contact(s)`,
-          variant: successCount > 0 ? "destructive" : "destructive",
-        });
+        throw new Error(result.error || "Failed to send SMS");
       }
-    } catch (error) {
+     } catch (error) {
       console.error("Error sending SOS:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send SOS",
+        description: error instanceof Error ? error.message : "Failed to send SOS alert",
         variant: "destructive",
       });
-    } finally {
       sosSending.current = false;
     }
   };
