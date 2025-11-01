@@ -79,8 +79,14 @@ Please call or contact emergency services now.`;
         const data = await response.json();
         
         if (!response.ok) {
-          console.error(`Twilio API error for ${contact.name}:`, data);
-          results.push({ contact: contact.name, success: false, error: data.message });
+          const code = (data && (data.code || data.error_code)) ?? undefined;
+          let friendly = data?.message || 'Failed to send SMS';
+          if (code === 21608) friendly = `Trial account: verify ${toNumber} in Twilio or upgrade to send to unverified numbers.`;
+          if (code === 21211 || code === 21614) friendly = `Invalid 'To' number. Use E.164 format like +919876543210.`;
+          if (code === 21610) friendly = `Recipient has blocked messages (STOP). Ask them to send START to your Twilio number.`;
+          if (code === 21606) friendly = `Your Twilio number is not SMS-enabled. Use an SMS-capable number.`;
+          console.error(`Twilio API error for ${contact.name}:`, { code, data });
+          results.push({ contact: contact.name, success: false, error: friendly, code });
         } else {
           console.log(`SMS sent successfully to ${contact.name}:`, data.sid);
           results.push({ contact: contact.name, success: true, sid: data.sid });

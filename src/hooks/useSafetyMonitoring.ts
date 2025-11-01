@@ -309,16 +309,21 @@ export const useSafetyMonitoring = () => {
       if (error) {
         console.error("Failed to send SOS alert:", error);
         toast({
-          title: "Error",
-          description: "Failed to send SOS alert",
+          title: "SOS Failed",
+          description: "We couldn't send your alert. Please try again.",
           variant: "destructive",
         });
       } else {
-        console.log("SOS alert sent successfully:", data);
+        console.log("SOS alert sent response:", data);
+        const results = (data as any)?.results || [];
+        const successCount = results.filter((r: any) => r.success).length;
+        const firstFailure = results.find((r: any) => !r.success);
         toast({
-          title: "🚨 SOS Alert Sent!",
-          description: `Alerts sent to ${contacts.length} contact(s)`,
-          variant: "destructive",
+          title: successCount > 0 ? "🚨 SOS Alert Sent" : "SOS Not Sent",
+          description: firstFailure
+            ? `Sent to ${successCount}/${contacts.length}. Issue: ${firstFailure.error}`
+            : `Sent to ${successCount}/${contacts.length} contact(s)`,
+          variant: successCount > 0 ? "destructive" : "destructive",
         });
       }
     } catch (error) {
