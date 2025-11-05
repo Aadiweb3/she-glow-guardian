@@ -16,7 +16,7 @@ serve(async (req) => {
     const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const twilioToken = Deno.env.get("TWILIO_AUTH_TOKEN");
     const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
-    const emergencyContact = "+917000079879";
+    const emergencyContact = "+919691523520";
 
     if (!twilioSid || !twilioToken || !twilioPhone) {
       throw new Error("Twilio credentials not configured");
