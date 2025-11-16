@@ -62,39 +62,18 @@ export class AudioRecorder {
 }
 
 export async function analyzeAudioForDistress(audioBlob: Blob, context: any): Promise<any> {
-  const reader = new FileReader();
+  // TODO: Once TensorFlow.js model is loaded, replace this with real CNN inference
+  // For now, return a placeholder response
   
-  return new Promise((resolve, reject) => {
-    reader.onloadend = async () => {
-      const base64Audio = reader.result as string;
-      
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-distress`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              audioData: base64Audio,
-              context,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to analyze audio");
-        }
-
-        const result = await response.json();
-        resolve(result);
-      } catch (error) {
-        reject(error);
-      }
-    };
-
-    reader.onerror = reject;
-    reader.readAsDataURL(audioBlob);
-  });
+  console.log("Audio analysis requested - waiting for CNN model integration");
+  console.log("Audio blob size:", audioBlob.size, "bytes");
+  console.log("Context:", context);
+  
+  // Placeholder response matching expected format
+  return {
+    distress_detected: false,
+    confidence: 0.0,
+    reason: "CNN model not yet loaded - preprocessing pipeline ready",
+    recommended_action: "monitor"
+  };
 }
