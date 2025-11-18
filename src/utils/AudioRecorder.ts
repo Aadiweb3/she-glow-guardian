@@ -61,19 +61,6 @@ export class AudioRecorder {
   }
 }
 
-export async function analyzeAudioForDistress(audioBlob: Blob, context: any): Promise<any> {
-  // TODO: Once TensorFlow.js model is loaded, replace this with real CNN inference
-  // For now, return a placeholder response
-  
-  console.log("Audio analysis requested - waiting for CNN model integration");
-  console.log("Audio blob size:", audioBlob.size, "bytes");
-  console.log("Context:", context);
-  
-  // Placeholder response matching expected format
-  return {
-    distress_detected: false,
-    confidence: 0.0,
-    reason: "CNN model not yet loaded - preprocessing pipeline ready",
-    recommended_action: "monitor"
-  };
-}
+// analyzeAudioForDistress has been replaced by CNNModelLoader.predict()
+// Import CNNModelLoader from '@/utils/CNNModelLoader' and use:
+// const analysis = await CNNModelLoader.predict(audioBlob);
