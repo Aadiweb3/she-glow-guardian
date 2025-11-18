@@ -171,15 +171,11 @@ export class AudioPreprocessor {
   }
 
   /**
-   * Convert power to dB scale
+   * Apply natural log: log(mel + 1e-6)
    */
-  static powerToDb(melSpec: number[][]): number[][] {
-    const refValue = Math.max(...melSpec.flat());
+  static applyLog(melSpec: number[][]): number[][] {
     return melSpec.map(frame =>
-      frame.map(val => {
-        const db = 10 * Math.log10(Math.max(val, 1e-10));
-        return db - 10 * Math.log10(Math.max(refValue, 1e-10));
-      })
+      frame.map(val => Math.log(val + 1e-6))
     );
   }
 
@@ -244,8 +240,8 @@ export class AudioPreprocessor {
     const filterbank = this.createMelFilterbank(N_FFT, N_MELS, SR);
     const melSpec = this.applyMelFilterbank(powerSpec, filterbank);
 
-    // Step 6: Convert to dB scale
-    const logMel = this.powerToDb(melSpec);
+    // Step 6: Apply natural log
+    const logMel = this.applyLog(melSpec);
 
     // Step 7: Normalize
     const normalized = this.normalize(logMel);
