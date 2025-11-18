@@ -9,7 +9,7 @@ import { AudioPreprocessor } from './AudioPreprocessor';
 export class CNNModelLoader {
   private static model: tf.LayersModel | null = null;
   private static isLoading = false;
-  private static readonly HIGH_RECALL_THRESHOLD = 0.5456; // from thresholds.json
+  private static readonly HIGH_RECALL_THRESHOLD = 0.5396; // from integration manifest
 
   /**
    * Load the TensorFlow.js model
