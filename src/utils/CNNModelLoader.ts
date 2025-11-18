@@ -13,9 +13,9 @@ export class CNNModelLoader {
 
   /**
    * Load the TensorFlow.js model
-   * @param modelPath Path to model.json file
+   * @param modelPath Path to model.json file (default: /models/tfjs_model/model.json)
    */
-  static async loadModel(modelPath: string): Promise<void> {
+  static async loadModel(modelPath: string = '/models/tfjs_model/model.json'): Promise<void> {
     if (this.model || this.isLoading) {
       console.log("Model already loaded or loading");
       return;
@@ -29,6 +29,7 @@ export class CNNModelLoader {
       console.log("CNN model loaded successfully");
       console.log("Model input shape:", this.model.inputs[0].shape);
       console.log("Model output shape:", this.model.outputs[0].shape);
+      this.model.summary();
     } catch (error) {
       console.error("Failed to load CNN model:", error);
       throw error;

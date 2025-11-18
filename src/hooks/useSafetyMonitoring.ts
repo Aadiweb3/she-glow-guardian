@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { AudioRecorder, analyzeAudioForDistress } from "@/utils/AudioRecorder";
+import { AudioRecorder } from "@/utils/AudioRecorder";
+import { CNNModelLoader } from "@/utils/CNNModelLoader";
 import { MotionDetector } from "@/utils/MotionDetector";
 import { LocationTracker, LocationData } from "@/utils/LocationTracker";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +53,31 @@ export const useSafetyMonitoring = () => {
 
   const startMonitoring = async () => {
     try {
+      // Load CNN model first
+      if (!CNNModelLoader.isModelLoaded()) {
+        console.log("Loading CNN distress detection model...");
+        toast({
+          title: "Initializing AI",
+          description: "Loading distress detection model...",
+        });
+        
+        try {
+          await CNNModelLoader.loadModel();
+          console.log("CNN model loaded and ready");
+          toast({
+            title: "AI Ready",
+            description: "Distress detection model loaded successfully",
+          });
+        } catch (error) {
+          console.error("Failed to load CNN model:", error);
+          toast({
+            title: "Model Load Failed",
+            description: "Continuing with GPS and motion detection only",
+            variant: "destructive",
+          });
+        }
+      }
+
       // Start location tracking
       if (!locationTracker.current) {
         locationTracker.current = new LocationTracker(handleLocationUpdate);
@@ -72,56 +98,63 @@ export const useSafetyMonitoring = () => {
       setState(prev => ({
         ...prev,
         status: "monitoring",
-        aiMonitoring: true,
+        aiMonitoring: CNNModelLoader.isModelLoaded(),
       }));
 
-      // Periodic audio analysis (every 60 seconds to avoid rate limits)
+      // Periodic audio analysis (every 10 seconds for real-time CNN inference)
       monitoringInterval.current = setInterval(async () => {
         try {
-          if (audioRecorder.current && !audioRecorder.current.isRecording()) {
+          if (audioRecorder.current && !audioRecorder.current.isRecording() && CNNModelLoader.isModelLoaded()) {
             await audioRecorder.current.start();
             
-            // Record for 3 seconds
+            // Record for 1 second (matching CNN training)
             setTimeout(async () => {
               if (audioRecorder.current) {
                 const audioBlob = await audioRecorder.current.stop();
                 
-                // Analyze audio with better error handling
+                // Analyze audio using CNN model
                 try {
-                  const analysis = await analyzeAudioForDistress(audioBlob, {
-                    location: state.lastLocation,
-                    timestamp: Date.now(),
+                  const analysis = await CNNModelLoader.predict(audioBlob);
+
+                  console.log("CNN Analysis:", {
+                    distress_detected: analysis.distress_detected,
+                    confidence: analysis.confidence,
+                    prob_distress: analysis.prob_distress,
+                    prob_safe: analysis.prob_safe,
+                    action: analysis.recommended_action
                   });
 
                   setState(prev => ({
                     ...prev,
-                    distressConfidence: analysis.confidence,
+                    distressConfidence: analysis.prob_distress,
                     micActive: true,
                   }));
 
-                  if (analysis.distress_detected && analysis.confidence > 0.7) {
-                    console.log("Distress detected:", analysis);
+                  if (analysis.distress_detected && analysis.prob_distress > 0.7) {
+                    console.log("High confidence distress detected:", analysis);
+                    toast({
+                      title: "Distress Detected",
+                      description: `Confidence: ${(analysis.prob_distress * 100).toFixed(1)}%`,
+                      variant: "destructive",
+                    });
                     triggerSOS();
+                  } else if (analysis.recommended_action === "monitor") {
+                    console.log("Moderate distress signal - monitoring closely");
                   }
                 } catch (error: any) {
-                  // Handle rate limit errors gracefully
-                  if (error.message?.includes('429') || error.message?.includes('rate limit')) {
-                    console.log("Rate limit reached, will retry in next cycle");
-                    toast({
-                      title: "AI Monitoring Paused",
-                      description: "Rate limit reached. Monitoring continues with GPS and motion.",
-                    });
-                  } else {
-                    console.error("Error analyzing audio:", error);
-                  }
+                  console.error("CNN inference error:", error);
+                  toast({
+                    title: "Analysis Error",
+                    description: "Audio analysis temporarily unavailable",
+                  });
                 }
               }
-            }, 3000);
+            }, 1000); // 1 second recording for CNN
           }
         } catch (error) {
           console.error("Error in audio monitoring:", error);
         }
-      }, 60000);
+      }, 10000); // Analyze every 10 seconds
 
       toast({
         title: "Safety Monitoring Active",
