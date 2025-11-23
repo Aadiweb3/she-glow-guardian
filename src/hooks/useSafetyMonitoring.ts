@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { AudioRecorder } from "@/utils/AudioRecorder";
-import { CNNModelLoader } from "@/utils/CNNModelLoader";
+import { VoiceCommandDetector } from "@/utils/VoiceCommandDetector";
 import { MotionDetector } from "@/utils/MotionDetector";
 import { LocationTracker, LocationData } from "@/utils/LocationTracker";
 import { useToast } from "@/hooks/use-toast";
@@ -27,10 +26,9 @@ export const useSafetyMonitoring = () => {
     distressConfidence: 0,
   });
 
-  const audioRecorder = useRef<AudioRecorder | null>(null);
+  const voiceDetector = useRef<VoiceCommandDetector | null>(null);
   const motionDetector = useRef<MotionDetector | null>(null);
   const locationTracker = useRef<LocationTracker | null>(null);
-  const monitoringInterval = useRef<NodeJS.Timeout | null>(null);
   const sosSending = useRef(false);
 
   const handleShake = useCallback(() => {
@@ -51,33 +49,18 @@ export const useSafetyMonitoring = () => {
     }));
   }, []);
 
+  const handleVoiceCommand = useCallback(() => {
+    console.log("Voice command detected - triggering SOS");
+    toast({
+      title: "Voice Command Detected",
+      description: "SOS alert triggered by voice command",
+      variant: "destructive",
+    });
+    triggerSOS();
+  }, [toast]);
+
   const startMonitoring = async () => {
     try {
-      // Load CNN model first
-      if (!CNNModelLoader.isModelLoaded()) {
-        console.log("Loading CNN distress detection model...");
-        toast({
-          title: "Initializing AI",
-          description: "Loading distress detection model...",
-        });
-        
-        try {
-          await CNNModelLoader.loadModel();
-          console.log("CNN model loaded and ready");
-          toast({
-            title: "AI Ready",
-            description: "Distress detection model loaded successfully",
-          });
-        } catch (error) {
-          console.error("Failed to load CNN model:", error);
-          toast({
-            title: "Model Load Failed",
-            description: "Continuing with GPS and motion detection only",
-            variant: "destructive",
-          });
-        }
-      }
-
       // Start location tracking
       if (!locationTracker.current) {
         locationTracker.current = new LocationTracker(handleLocationUpdate);
@@ -90,75 +73,22 @@ export const useSafetyMonitoring = () => {
       }
       motionDetector.current.start();
 
-      // Start audio monitoring
-      if (!audioRecorder.current) {
-        audioRecorder.current = new AudioRecorder();
+      // Start voice command detection
+      if (!voiceDetector.current) {
+        voiceDetector.current = new VoiceCommandDetector(handleVoiceCommand);
       }
+      voiceDetector.current.start();
 
       setState(prev => ({
         ...prev,
         status: "monitoring",
-        aiMonitoring: CNNModelLoader.isModelLoaded(),
+        aiMonitoring: true,
+        micActive: true,
       }));
-
-      // Periodic audio analysis (every 10 seconds for real-time CNN inference)
-      monitoringInterval.current = setInterval(async () => {
-        try {
-          if (audioRecorder.current && !audioRecorder.current.isRecording() && CNNModelLoader.isModelLoaded()) {
-            await audioRecorder.current.start();
-            
-            // Record for 1 second (matching CNN training)
-            setTimeout(async () => {
-              if (audioRecorder.current) {
-                const audioBlob = await audioRecorder.current.stop();
-                
-                // Analyze audio using CNN model
-                try {
-                  const analysis = await CNNModelLoader.predict(audioBlob);
-
-                  console.log("CNN Analysis:", {
-                    distress_detected: analysis.distress_detected,
-                    confidence: analysis.confidence,
-                    prob_distress: analysis.prob_distress,
-                    prob_safe: analysis.prob_safe,
-                    action: analysis.recommended_action
-                  });
-
-                  setState(prev => ({
-                    ...prev,
-                    distressConfidence: analysis.prob_distress,
-                    micActive: true,
-                  }));
-
-                  if (analysis.distress_detected && analysis.prob_distress > 0.7) {
-                    console.log("High confidence distress detected:", analysis);
-                    toast({
-                      title: "Distress Detected",
-                      description: `Confidence: ${(analysis.prob_distress * 100).toFixed(1)}%`,
-                      variant: "destructive",
-                    });
-                    triggerSOS();
-                  } else if (analysis.recommended_action === "monitor") {
-                    console.log("Moderate distress signal - monitoring closely");
-                  }
-                } catch (error: any) {
-                  console.error("CNN inference error:", error);
-                  toast({
-                    title: "Analysis Error",
-                    description: "Audio analysis temporarily unavailable",
-                  });
-                }
-              }
-            }, 1000); // 1 second recording for CNN
-          }
-        } catch (error) {
-          console.error("Error in audio monitoring:", error);
-        }
-      }, 10000); // Analyze every 10 seconds
 
       toast({
         title: "Safety Monitoring Active",
-        description: "AI is now monitoring for distress signals",
+        description: "Voice commands, GPS, and motion detection enabled",
       });
     } catch (error) {
       console.error("Error starting monitoring:", error);
@@ -171,12 +101,9 @@ export const useSafetyMonitoring = () => {
   };
 
   const stopMonitoring = () => {
-    if (monitoringInterval.current) {
-      clearInterval(monitoringInterval.current);
-    }
-    
     locationTracker.current?.stop();
     motionDetector.current?.stop();
+    voiceDetector.current?.stop();
     
     setState(prev => ({
       ...prev,

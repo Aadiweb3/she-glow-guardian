@@ -12,7 +12,7 @@ All colors MUST be HSL.
     /* Pink → Purple → Blue Neon Gradient System */
     
     /* Base Colors - Deep Dark for 3D Depth */
-    --background: 240 25% 6%;
+    --background: 240 30% 4%;
     --foreground: 0 0% 100%;
 
     /* Card & Glass Effects - Enhanced Glassmorphism */
@@ -65,16 +65,16 @@ All colors MUST be HSL.
 
     --radius: 1.5rem;
 
-    /* Enhanced Neon Gradients - Pink → Purple → Blue */
+    /* Enhanced Dark Neon Gradients - Deep Purple → Dark Blue */
     --gradient-main: linear-gradient(135deg, 
-      hsl(330 100% 71%) 0%, 
-      hsl(270 80% 65%) 50%, 
-      hsl(210 100% 55%) 100%);
+      hsl(240 30% 4%) 0%, 
+      hsl(270 50% 15%) 40%, 
+      hsl(240 40% 10%) 100%);
     
     --gradient-hero: linear-gradient(180deg, 
-      hsl(240 25% 6%) 0%, 
-      hsl(270 80% 20%) 50%, 
-      hsl(330 100% 30%) 100%);
+      hsl(240 30% 4%) 0%, 
+      hsl(270 60% 12%) 50%, 
+      hsl(240 50% 8%) 100%);
     
     --gradient-sos: linear-gradient(135deg, 
       hsl(0 100% 50%) 0%, 
@@ -129,7 +129,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    background: var(--gradient-main);
+    background: var(--gradient-hero);
     background-attachment: fixed;
   }
 }
