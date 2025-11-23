@@ -3,10 +3,7 @@ import { ArrowLeft, Phone, Plus, UserCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Contacts = () => {
-  const contacts = [
-    { name: "Mom", phone: "9990011223", relation: "Primary" },
-    { name: "Friend - Priya", phone: "8887745621", relation: "Secondary" },
-  ];
+  const contacts: any[] = [];
 
   return (
     <div className="min-h-screen p-6">
@@ -32,27 +29,37 @@ const Contacts = () => {
 
         {/* Contacts List */}
         <div className="space-y-3">
-          {contacts.map((contact, index) => (
-            <div key={index} className="glass rounded-2xl p-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-purple rounded-full flex items-center justify-center">
-                  <UserCircle className="w-7 h-7" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold">{contact.name}</h3>
-                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                      {contact.relation}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{contact.phone}</p>
-                </div>
-                <Button size="icon" variant="ghost" className="rounded-full hover:bg-primary/10">
-                  <Phone className="w-5 h-5" />
-                </Button>
-              </div>
+          {contacts.length === 0 ? (
+            <div className="glass rounded-2xl p-8 text-center">
+              <UserCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="font-semibold mb-2">No contacts yet</h3>
+              <p className="text-sm text-muted-foreground">
+                Add emergency contacts who will receive alerts when you trigger SOS
+              </p>
             </div>
-          ))}
+          ) : (
+            contacts.map((contact, index) => (
+              <div key={index} className="glass rounded-2xl p-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-purple rounded-full flex items-center justify-center">
+                    <UserCircle className="w-7 h-7" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold">{contact.name}</h3>
+                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                        {contact.relation}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                  </div>
+                  <Button size="icon" variant="ghost" className="rounded-full hover:bg-primary/10">
+                    <Phone className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Info Card */}
