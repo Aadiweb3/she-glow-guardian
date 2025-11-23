@@ -1,8 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MapPin, AlertTriangle, Navigation } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { LocationTracker, LocationData } from "@/utils/LocationTracker";
 
 const Map = () => {
+  const [location, setLocation] = useState<LocationData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const tracker = new LocationTracker((loc) => {
+      setLocation(loc);
+      setIsLoading(false);
+    });
+
+    tracker.start().catch(() => {
+      setIsLoading(false);
+    });
+
+    return () => {
+      tracker.stop();
+    };
+  }, []);
+
+  const displayLocation = location?.address || 
+    (location ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : "Getting location...");
+
   return (
     <div className="min-h-screen relative">
       {/* Header */}
@@ -55,9 +78,11 @@ const Map = () => {
           {/* Current Location Info */}
           <div className="glass rounded-2xl p-4 mb-3">
             <div className="flex items-start justify-between mb-3">
-              <div>
+              <div className="flex-1 pr-2">
                 <h3 className="font-semibold text-sm mb-1">Current Location</h3>
-                <p className="text-xs text-muted-foreground">MI Road, Jaipur</p>
+                <p className="text-xs text-muted-foreground break-words">
+                  {isLoading ? "Loading..." : displayLocation}
+                </p>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-caution-zone">78</div>
