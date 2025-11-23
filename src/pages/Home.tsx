@@ -261,7 +261,7 @@ const Home = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
             >
-              Tap • Shake 3x • Say "Help Me"
+              Tap • Shake 3x • Say "Help", "Leave" or "Stop"
             </motion.p>
           </motion.div>
 
@@ -305,8 +305,8 @@ const Home = () => {
               whileHover={{ y: -4 }}
             >
               <Brain className={`w-7 h-7 mx-auto mb-2 ${state.aiMonitoring ? 'text-primary-blue' : 'text-muted-foreground'}`} />
-              <p className="text-xs text-muted-foreground mb-1">AI Mode</p>
-              <p className="text-xs font-semibold">{state.aiMonitoring ? 'Active 🧠' : 'Offline'}</p>
+              <p className="text-xs text-muted-foreground mb-1">Voice AI</p>
+              <p className="text-xs font-semibold">{state.aiMonitoring ? 'Active 🎙️' : 'Offline'}</p>
             </motion.div>
           </motion.div>
 
@@ -361,7 +361,7 @@ const Home = () => {
             <div>
               <h3 className="font-semibold mb-1">Safety Monitoring</h3>
               <p className="text-xs text-muted-foreground">
-                {isMonitoring ? '✓ AI checks every 60 sec' : 'Paused - Tap to resume'}
+                {isMonitoring ? '✓ Voice AI always listening' : 'Paused - Tap to resume'}
               </p>
             </div>
             <Button
