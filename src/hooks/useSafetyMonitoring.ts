@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { VoiceCommandDetector } from "@/utils/VoiceCommandDetector";
+import { AudioRecorder, analyzeAudioForDistress } from "@/utils/AudioRecorder";
 import { MotionDetector } from "@/utils/MotionDetector";
 import { LocationTracker, LocationData } from "@/utils/LocationTracker";
 import { useToast } from "@/hooks/use-toast";
@@ -26,9 +26,10 @@ export const useSafetyMonitoring = () => {
     distressConfidence: 0,
   });
 
-  const voiceDetector = useRef<VoiceCommandDetector | null>(null);
+  const audioRecorder = useRef<AudioRecorder | null>(null);
   const motionDetector = useRef<MotionDetector | null>(null);
   const locationTracker = useRef<LocationTracker | null>(null);
+  const monitoringInterval = useRef<NodeJS.Timeout | null>(null);
   const sosSending = useRef(false);
 
   const handleShake = useCallback(() => {
@@ -49,16 +50,6 @@ export const useSafetyMonitoring = () => {
     }));
   }, []);
 
-  const handleVoiceCommand = useCallback(() => {
-    console.log("Voice command detected - triggering SOS");
-    toast({
-      title: "Voice Command Detected",
-      description: "SOS alert triggered by voice command",
-      variant: "destructive",
-    });
-    triggerSOS();
-  }, [toast]);
-
   const startMonitoring = async () => {
     try {
       // Start location tracking
@@ -73,22 +64,68 @@ export const useSafetyMonitoring = () => {
       }
       motionDetector.current.start();
 
-      // Start voice command detection
-      if (!voiceDetector.current) {
-        voiceDetector.current = new VoiceCommandDetector(handleVoiceCommand);
+      // Start audio monitoring
+      if (!audioRecorder.current) {
+        audioRecorder.current = new AudioRecorder();
       }
-      voiceDetector.current.start();
 
       setState(prev => ({
         ...prev,
         status: "monitoring",
         aiMonitoring: true,
-        micActive: true,
       }));
+
+      // Periodic audio analysis (every 60 seconds to avoid rate limits)
+      monitoringInterval.current = setInterval(async () => {
+        try {
+          if (audioRecorder.current && !audioRecorder.current.isRecording()) {
+            await audioRecorder.current.start();
+            
+            // Record for 3 seconds
+            setTimeout(async () => {
+              if (audioRecorder.current) {
+                const audioBlob = await audioRecorder.current.stop();
+                
+                // Analyze audio with better error handling
+                try {
+                  const analysis = await analyzeAudioForDistress(audioBlob, {
+                    location: state.lastLocation,
+                    timestamp: Date.now(),
+                  });
+
+                  setState(prev => ({
+                    ...prev,
+                    distressConfidence: analysis.confidence,
+                    micActive: true,
+                  }));
+
+                  if (analysis.distress_detected && analysis.confidence > 0.7) {
+                    console.log("Distress detected:", analysis);
+                    triggerSOS();
+                  }
+                } catch (error: any) {
+                  // Handle rate limit errors gracefully
+                  if (error.message?.includes('429') || error.message?.includes('rate limit')) {
+                    console.log("Rate limit reached, will retry in next cycle");
+                    toast({
+                      title: "AI Monitoring Paused",
+                      description: "Rate limit reached. Monitoring continues with GPS and motion.",
+                    });
+                  } else {
+                    console.error("Error analyzing audio:", error);
+                  }
+                }
+              }
+            }, 3000);
+          }
+        } catch (error) {
+          console.error("Error in audio monitoring:", error);
+        }
+      }, 60000);
 
       toast({
         title: "Safety Monitoring Active",
-        description: "Voice commands, GPS, and motion detection enabled",
+        description: "AI is now monitoring for distress signals",
       });
     } catch (error) {
       console.error("Error starting monitoring:", error);
@@ -101,9 +138,12 @@ export const useSafetyMonitoring = () => {
   };
 
   const stopMonitoring = () => {
+    if (monitoringInterval.current) {
+      clearInterval(monitoringInterval.current);
+    }
+    
     locationTracker.current?.stop();
     motionDetector.current?.stop();
-    voiceDetector.current?.stop();
     
     setState(prev => ({
       ...prev,

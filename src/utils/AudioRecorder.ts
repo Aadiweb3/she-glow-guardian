@@ -61,6 +61,40 @@ export class AudioRecorder {
   }
 }
 
-// analyzeAudioForDistress has been replaced by CNNModelLoader.predict()
-// Import CNNModelLoader from '@/utils/CNNModelLoader' and use:
-// const analysis = await CNNModelLoader.predict(audioBlob);
+export async function analyzeAudioForDistress(audioBlob: Blob, context: any): Promise<any> {
+  const reader = new FileReader();
+  
+  return new Promise((resolve, reject) => {
+    reader.onloadend = async () => {
+      const base64Audio = reader.result as string;
+      
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-distress`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              audioData: base64Audio,
+              context,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to analyze audio");
+        }
+
+        const result = await response.json();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(audioBlob);
+  });
+}
